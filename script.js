@@ -7,11 +7,15 @@ import {
   subscribeProducts, subscribeSales,
   createProduct, updateProduct, deleteProduct,
   updateSale, commitSale, cancelSale,
-  createCierre
+  createCierre,
+  db
 } from "./firestore-service.js";
 
 import { onAuthStateChanged, signOut }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+import { deleteDoc, doc }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // ── Paleta ────────────────────────────────────────────────
 const CAT_COLORS = {
@@ -37,8 +41,8 @@ let pendingCode = '';
 let scanBuf     = '';
 let scanTmr     = null;
 let searchTmr   = null;
-let unsubProds  = null;  // función para cancelar listener productos
-let unsubSales  = null;  // función para cancelar listener ventas
+let unsubProds  = null;
+let unsubSales  = null;
 
 // ── Helpers ───────────────────────────────────────────────
 const el   = id      => document.getElementById(id);
@@ -105,7 +109,6 @@ function overlay(show) {
 function initListeners() {
   overlay(true);
 
-  // Listener productos — se actualiza solo ante cualquier cambio en Firestore
   unsubProds = subscribeProducts(uid, prods => {
     products = prods;
     nextId   = products.length ? Math.max(...products.map(p => p.id || 0)) + 1 : 1;
@@ -115,7 +118,6 @@ function initListeners() {
     refreshAll();
   });
 
-  // Listener ventas — se actualiza solo ante cualquier cambio en Firestore
   unsubSales = subscribeSales(uid, sls => {
     sales = sls;
     syncGlobals();
@@ -472,7 +474,6 @@ function clearCart() {
   renderCart();
 }
 
-// Globales para onclick= del HTML
 window._chgQty    = (pid, d) => {
   const item = carrito.find(i => i.productId === pid); if (!item) return;
   const prod = products.find(p => p.id === pid);
@@ -509,7 +510,6 @@ async function confirmarVenta() {
   if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
   try {
     await commitSale(uid, venta, products);
-    // El listener de ventas actualizará sales automáticamente
     const n = venta.items.reduce((a, i) => a + i.qty, 0);
     toast(`Venta registrada · ${n} ítem${n !== 1 ? 's' : ''} · ${fmt(venta.total)}`, 'green');
     clearCart(); clearInput(); focusScanner();
@@ -621,6 +621,40 @@ window._anularVenta = async fid => {
   } catch(e) { console.error(e); toast('Error al anular.', 'error'); }
 };
 
+// ── Borrar historial ──────────────────────────────────────
+async function borrarHistorial() {
+  if (!uid) return;
+  const lista = getSalesFiltradas();
+  if (!lista.length) {
+    toast('No hay registros en este período para borrar', 'error');
+    return;
+  }
+  const labels = { hoy:'de hoy', semana:'de esta semana', mes:'de este mes', todo:'completo' };
+  const filtro  = el('filtro-ventas')?.value || 'todo';
+  if (!confirm(
+    `¿Borrar el historial ${labels[filtro]}?\n\n` +
+    `Se eliminarán ${lista.length} registro(s) de forma permanente.\n` +
+    `Esta acción NO se puede deshacer.`
+  )) return;
+
+  const btn = el('btn-borrar-historial');
+  if (btn) { btn.disabled = true; btn.textContent = 'Borrando…'; }
+  try {
+    await Promise.all(
+      lista.map(s => deleteDoc(doc(db, `users/${uid}/sales`, s.firestoreId)))
+    );
+    toast(`✓ Historial borrado: ${lista.length} registro(s) eliminados`, 'green');
+  } catch(e) {
+    console.error('borrarHistorial:', e);
+    toast('Error al borrar historial. Verifica tu conexión.', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Borrar historial`;
+    }
+  }
+}
+
 // ── Alertas ───────────────────────────────────────────────
 function renderAlertas() {
   const items = products.filter(p => stockSt(p) !== 'ok').sort((a, b) => (a.stock||0) - (b.stock||0));
@@ -729,12 +763,10 @@ async function saveProduct() {
       const prod   = products.find(x => x.id === editId);
       const fields = {name, barcode, category, price, stock, minStock, desc};
       await updateProduct(uid, prod.firestoreId, fields);
-      // El listener actualizará el array automáticamente
       toast('Producto actualizado');
     } else {
       const newProd = { id: nextId++, name, barcode, category, price, stock, minStock, desc };
       await createProduct(uid, newProd);
-      // El listener actualizará el array automáticamente
       toast('Producto agregado', 'green');
     }
     closeModal();
@@ -752,7 +784,6 @@ async function confirmDelete(id) {
   try {
     await deleteProduct(uid, p.firestoreId);
     toast('Producto eliminado');
-    // El listener actualizará el array automáticamente
   } catch(e) {
     console.error(e); toast('Error al eliminar.', 'error');
   }
@@ -765,14 +796,71 @@ function exportProductsCSV() {
       p.price, p.stock, p.minStock, {ok:'En stock',low:'Stock bajo',out:'Sin stock'}[stockSt(p)]])];
   downloadCSV(rows, `inventario_${today()}.csv`); toast('CSV exportado');
 }
+
 function exportVentasCSV() {
   const lista = getSalesFiltradas();
-  const rows  = [['ID','Productos','Total','Items','Nota','Fecha','Estado'],
-    ...lista.map(s => [s.firestoreId, `"${s.items.map(i=>`${i.name} x${i.qty}`).join('; ')}"`,
-      s.total, s.items.reduce((a,i)=>a+i.qty,0), `"${s.nota||''}"`, `"${fmtDT(s.date)}"`,
-      s.anulada?'Anulada':s.cerrada?'Cerrada':'Activa'])];
-  downloadCSV(rows, `ventas_${today()}.csv`); toast('CSV exportado');
+  const act   = lista.filter(s => !s.anulada);
+
+  const totalIngresos = act.reduce((a, s) => a + (s.total || 0), 0);
+  const totalItems    = act.reduce((a, s) => a + s.items.reduce((b, i) => b + (i.qty || 0), 0), 0);
+  const totalVentas   = act.length;
+
+  const filtroLabel = { hoy:'Hoy', semana:'Esta semana', mes:'Este mes', todo:'Todas' };
+  const periodo = filtroLabel[el('filtro-ventas')?.value || 'todo'];
+
+  const fechaExport = new Date().toLocaleString('es-CO');
+
+  const rows = [
+
+    // ───── HEADER LIMPIO ─────
+    ['REPORTE DE VENTAS'],
+    ['Negocio','W INVENTRA'],
+    ['Fecha de exportación', fechaExport],
+    ['Período', periodo],
+    [],
+
+    // ───── RESUMEN ─────
+    ['RESUMEN'],
+    ['Total ventas', totalVentas],
+    ['Productos vendidos', totalItems],
+    ['Ingresos totales', totalIngresos],
+    ['Ventas anuladas', lista.filter(s => s.anulada).length],
+    [],
+
+    // ───── TABLA PRINCIPAL ─────
+    [
+      'N°',
+      'ID Venta',
+      'Fecha',
+      'Productos',
+      'Cantidad Total',
+      'Total ($)',
+      'Estado',
+      'Nota'
+    ],
+
+    ...lista.map((s, i) => [
+      i + 1,
+      s.firestoreId,
+      fmtDT(s.date),
+      s.items.map(it => `${it.name} (x${it.qty})`).join(' | '),
+      s.items.reduce((a, it) => a + it.qty, 0),
+      s.total,
+      s.anulada ? 'ANULADA' : s.cerrada ? 'CERRADA' : 'ACTIVA',
+      s.nota || ''
+    ]),
+
+    [],
+
+    // ───── TOTAL FINAL ─────
+    ['','','','','TOTAL GENERAL', totalIngresos]
+
+  ];
+
+  downloadCSV(rows, `VENTAS_${today()}.csv`);
+  toast('✅ Reporte profesional generado', 'green');
 }
+
 function downloadCSV(rows, filename) {
   const csv  = rows.map(r => r.join(',')).join('\n');
   const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
@@ -788,7 +876,7 @@ document.addEventListener('DOMContentLoaded', () => {
     uid = user.uid;
     const em = el('user-email-display'); if (em) em.textContent = user.email;
     el('btn-logout')?.addEventListener('click', async () => { await signOut(auth); window.location.replace('login.html'); });
-    initListeners(); // arranca los listeners de tiempo real
+    initListeners();
   });
 
   document.querySelectorAll('.nav-item').forEach(item => {
@@ -818,16 +906,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  el('btn-export')?.addEventListener('click',        exportProductsCSV);
-  el('btn-confirmar')?.addEventListener('click',     confirmarVenta);
-  el('btn-vaciar')?.addEventListener('click',        () => { if (carrito.length && confirm('¿Vaciar el carrito?')) clearCart(); });
-  el('filtro-ventas')?.addEventListener('change',    renderHistorial);
-  el('btn-export-ventas')?.addEventListener('click', exportVentasCSV);
-  el('btn-cierre-caja')?.addEventListener('click',   abrirCierre);
-  el('btn-cierre-ventas')?.addEventListener('click', abrirCierre);
-  el('cierre-close')?.addEventListener('click',      () => el('modal-cierre')?.classList.remove('open'));
-  el('cierre-cancelar')?.addEventListener('click',   () => el('modal-cierre')?.classList.remove('open'));
-  el('cierre-confirmar')?.addEventListener('click',  confirmarCierre);
+  el('btn-export')?.addEventListener('click',           exportProductsCSV);
+  el('btn-confirmar')?.addEventListener('click',        confirmarVenta);
+  el('btn-vaciar')?.addEventListener('click',           () => { if (carrito.length && confirm('¿Vaciar el carrito?')) clearCart(); });
+  el('filtro-ventas')?.addEventListener('change',       renderHistorial);
+  el('btn-export-ventas')?.addEventListener('click',    exportVentasCSV);
+  el('btn-borrar-historial')?.addEventListener('click', borrarHistorial);
+  el('btn-cierre-caja')?.addEventListener('click',      abrirCierre);
+  el('btn-cierre-ventas')?.addEventListener('click',    abrirCierre);
+  el('cierre-close')?.addEventListener('click',         () => el('modal-cierre')?.classList.remove('open'));
+  el('cierre-cancelar')?.addEventListener('click',      () => el('modal-cierre')?.classList.remove('open'));
+  el('cierre-confirmar')?.addEventListener('click',     confirmarCierre);
 
   initScanner();
 });

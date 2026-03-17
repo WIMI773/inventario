@@ -7,10 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  <style>
-    /* Ocultar hasta que Firebase confirme sesión */
-    body { visibility: hidden; }
 
+  
+  <style>
+    body { visibility: hidden; }
     .sidebar-user {
       display:flex;align-items:center;gap:8px;
       padding:10px 18px 4px;font-size:11px;color:var(--text3);
@@ -70,7 +70,6 @@
         Categorías
       </a>
     </nav>
-
     <div class="sidebar-user">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
@@ -84,7 +83,7 @@
       </svg>
       Cerrar sesión
     </button>
-    <div class="sidebar-footer">Versión 5.1</div>
+    <div class="sidebar-footer">Versión 5.2</div>
   </aside>
 
   <main class="main">
@@ -301,6 +300,16 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Exportar CSV
           </button>
+          <button class="btn btn-danger" id="btn-borrar-historial" title="Eliminar registros del período seleccionado">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+              <path d="M10 11v6"/>
+              <path d="M14 11v6"/>
+              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+            </svg>
+            Borrar historial
+          </button>
           <button class="btn btn-cierre" id="btn-cierre-caja">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
             Cierre de caja
@@ -426,11 +435,8 @@
 
   <div class="toast" id="toast"></div>
 
-  <!-- Script principal (módulo ES) -->
   <script type="module" src="script.js"></script>
 
-  <!-- Scripts inline: tabs escáner + búsqueda por nombre
-       Usan window._inv_* para acceder a datos del módulo -->
   <script>
     function switchTab(tab) {
       const ps=document.getElementById('panel-scanner');
@@ -505,7 +511,6 @@
         ni.value='';ncl.style.display='none';nac.classList.remove('open');ni.focus();
       });
 
-      // Actualizar topbar de ventas cada 2 s
       setInterval(()=>{
         const bar=document.getElementById('ventas-topbar-info'); if(!bar) return;
         const sales=getSales();
@@ -520,7 +525,6 @@
       },2000);
     });
 
-    // Accesores seguros (el módulo puede no haber terminado aún)
     function getProducts(){ return window._inv_products||[]; }
     function getSales()   { return window._inv_sales||[]; }
     function getToday()   { return (window._inv_today?window._inv_today():new Date().toISOString().slice(0,10)); }
