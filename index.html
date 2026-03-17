@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventario — Mi Tienda</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Ocultar hasta que Firebase confirme sesión */
+    body { visibility: hidden; }
+
+    .sidebar-user {
+      display:flex;align-items:center;gap:8px;
+      padding:10px 18px 4px;font-size:11px;color:var(--text3);
+      border-top:1px solid var(--border);overflow:hidden;
+    }
+    .sidebar-user-email { white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+    .sidebar-logout {
+      display:flex;align-items:center;gap:8px;
+      width:calc(100% - 20px);margin:6px 10px 2px;padding:8px 12px;
+      background:none;border:1px solid var(--border);border-radius:6px;
+      font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text2);
+      cursor:pointer;transition:background .15s,color .15s,border-color .15s;text-align:left;
+    }
+    .sidebar-logout:hover { background:#fdecea;color:#c0392b;border-color:#f5c6c2; }
+  </style>
+</head>
+<body>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+      </div>
+      <div>
+        <div class="logo-name">Mi Tienda</div>
+        <div class="logo-sub">Sistema de Inventario</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <a class="nav-item active" data-view="dashboard">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </a>
+      <a class="nav-item" data-view="productos">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        Productos
+      </a>
+      <a class="nav-item" data-view="ventas">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        Ventas
+        <span class="nav-badge green" id="ventas-hoy-badge"></span>
+      </a>
+      <a class="nav-item" data-view="historial">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Historial
+      </a>
+      <a class="nav-item" data-view="alertas">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        Alertas
+        <span class="nav-badge" id="alert-badge"></span>
+      </a>
+      <a class="nav-item" data-view="categorias">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        Categorías
+      </a>
+    </nav>
+
+    <div class="sidebar-user">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+      </svg>
+      <span class="sidebar-user-email" id="user-email-display">—</span>
+    </div>
+    <button class="sidebar-logout" id="btn-logout">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+      </svg>
+      Cerrar sesión
+    </button>
+    <div class="sidebar-footer">Versión 5.1</div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="menu-toggle" id="menu-toggle">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <h1 class="page-title" id="page-title">Dashboard</h1>
+      </div>
+      <div id="topbar-actions">
+        <button class="btn btn-primary" id="btn-agregar">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Agregar producto
+        </button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="view active" id="view-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#e8f4fd;color:#1a7cbf">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            </div>
+            <div><div class="stat-label">Total productos</div><div class="stat-value" id="stat-total">0</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#eaf6ef;color:#1a8f4b">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <div><div class="stat-label">Valor inventario</div><div class="stat-value" id="stat-valor">$0</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#ede9fe;color:#6d28d9">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+            </div>
+            <div><div class="stat-label">Ventas hoy</div><div class="stat-value" id="stat-ventas-hoy">$0</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#fff8e6;color:#b87d00">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <div><div class="stat-label">Alertas de stock</div><div class="stat-value" id="stat-alertas">0</div></div>
+          </div>
+        </div>
+        <div class="dashboard-grid">
+          <div class="card"><div class="card-header"><div class="card-title">Últimas ventas del día</div></div><div id="dash-ventas"></div></div>
+          <div class="card"><div class="card-header"><div class="card-title">Productos críticos</div></div><div id="dash-criticos"></div></div>
+        </div>
+        <div class="card" style="margin-top:1.5rem">
+          <div class="card-header"><div class="card-title">Distribución por categoría</div></div>
+          <div id="dash-categorias"></div>
+        </div>
+      </div>
+
+      <!-- PRODUCTOS -->
+      <div class="view" id="view-productos">
+        <div class="toolbar">
+          <div class="search-wrap">
+            <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input class="search-input" id="search" type="text" placeholder="Buscar producto...">
+          </div>
+          <select class="select-filter" id="cat-filter"><option value="">Todas las categorías</option></select>
+          <select class="select-filter" id="stock-filter">
+            <option value="">Todo el stock</option>
+            <option value="ok">En stock</option>
+            <option value="low">Stock bajo</option>
+            <option value="out">Sin stock</option>
+          </select>
+          <button class="btn btn-outline" id="btn-export">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar CSV
+          </button>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th class="sortable" data-col="name">Producto <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="barcode">Código <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="category">Categoría <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="price">Precio <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="stock">Stock <span class="sort-arrow"></span></th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+        <div class="table-footer" id="table-footer"></div>
+      </div>
+
+      <!-- VENTAS -->
+      <div class="view" id="view-ventas">
+        <div class="ventas-topbar">
+          <div class="ventas-topbar-info" id="ventas-topbar-info"></div>
+          <button class="btn btn-cierre" id="btn-cierre-ventas">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            Cerrar ventas del día
+          </button>
+        </div>
+        <div class="caja-layout">
+          <div class="caja-left">
+            <div class="scanner-box" id="scanner-box">
+              <div class="scanner-header">
+                <div class="scanner-pulse"></div>
+                <span class="scanner-label">Escáner activo</span>
+              </div>
+              <div class="scanner-tabs">
+                <button class="stab active" id="stab-scanner" onclick="switchTab('scanner')">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="2" y1="5" x2="2" y2="19"/><line x1="6" y1="3" x2="6" y2="21"/>
+                    <line x1="10" y1="5" x2="10" y2="19"/><line x1="14" y1="3" x2="14" y2="21"/>
+                    <line x1="18" y1="5" x2="18" y2="19"/><line x1="22" y1="3" x2="22" y2="21"/>
+                  </svg>
+                  Código de barras
+                </button>
+                <button class="stab" id="stab-nombre" onclick="switchTab('nombre')">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  Buscar por nombre
+                </button>
+              </div>
+              <div class="scanner-panel" id="panel-scanner">
+                <div class="scanner-input-wrap" style="position:relative">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0">
+                    <line x1="2" y1="5" x2="2" y2="19"/><line x1="6" y1="3" x2="6" y2="21"/><line x1="10" y1="5" x2="10" y2="19"/>
+                    <line x1="14" y1="3" x2="14" y2="21"/><line x1="18" y1="5" x2="18" y2="19"/><line x1="22" y1="3" x2="22" y2="21"/>
+                  </svg>
+                  <input type="text" id="barcode-input" class="barcode-input"
+                    placeholder="Escanea el código de barras..."
+                    autocomplete="off" autocorrect="off" spellcheck="false">
+                  <button class="scanner-clear" id="scanner-clear" style="display:none" title="Limpiar">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                </div>
+                <div class="scanner-hint">El escáner agrega automáticamente al leer el código</div>
+              </div>
+              <div class="scanner-panel hidden" id="panel-nombre">
+                <div class="scanner-input-wrap" style="position:relative">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input type="text" id="nombre-input" class="barcode-input"
+                    placeholder="Escribe el nombre del producto..."
+                    autocomplete="off" autocorrect="off" spellcheck="false">
+                  <button class="scanner-clear" id="nombre-clear" style="display:none" title="Limpiar">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                </div>
+                <div class="autocomplete-list" id="nombre-autocomplete-list"></div>
+                <div class="scanner-hint">Escribe mínimo 1 letra · ↑↓ para navegar · Enter para agregar</div>
+              </div>
+              <div class="autocomplete-list" id="autocomplete-list"></div>
+            </div>
+
+            <div class="card" style="margin-top:16px;flex:1">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:6px"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                  Carrito
+                  <span class="carrito-count" id="carrito-count">0 items</span>
+                </div>
+                <button class="btn btn-outline btn-sm" id="btn-vaciar" style="display:none">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                  Vaciar
+                </button>
+              </div>
+              <div id="carrito-vacio" class="carrito-vacio">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                <p>Escanea o busca un producto para agregarlo</p>
+              </div>
+              <div id="carrito-items"></div>
+              <div class="carrito-nota-wrap" id="carrito-nota-wrap" style="display:none">
+                <input class="form-input" id="carrito-nota" type="text" placeholder="Nota de la venta (cliente, referencia...)">
+              </div>
+            </div>
+          </div>
+
+          <div class="caja-right">
+            <div class="card resumen-card">
+              <div class="card-header"><div class="card-title">Resumen de venta</div></div>
+              <div class="resumen-body">
+                <div class="resumen-row"><span>Subtotal</span><strong id="r-subtotal">$0</strong></div>
+                <div class="resumen-row resumen-total"><span>TOTAL</span><strong id="r-total">$0</strong></div>
+              </div>
+              <div class="resumen-footer">
+                <div class="form-error" id="caja-error"></div>
+                <button class="btn btn-confirmar" id="btn-confirmar">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  Confirmar venta
+                </button>
+                <div class="items-sin-precio" id="items-sin-precio" style="display:none">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  Algunos productos no tienen precio registrado
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- HISTORIAL -->
+      <div class="view" id="view-historial">
+        <div class="toolbar">
+          <select class="select-filter" id="filtro-ventas">
+            <option value="hoy">Hoy</option>
+            <option value="semana">Esta semana</option>
+            <option value="mes">Este mes</option>
+            <option value="todo" selected>Todas</option>
+          </select>
+          <button class="btn btn-outline" id="btn-export-ventas">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar CSV
+          </button>
+          <button class="btn btn-cierre" id="btn-cierre-caja">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            Cierre de caja
+          </button>
+        </div>
+        <div class="ventas-resumen-bar" id="ventas-resumen-bar"></div>
+        <div class="card" style="margin-top:16px"><div id="historial-body"></div></div>
+      </div>
+
+      <!-- ALERTAS -->
+      <div class="view" id="view-alertas">
+        <p class="alertas-desc">Productos que requieren reabastecimiento inmediato.</p>
+        <div id="alertas-list"></div>
+      </div>
+
+      <!-- CATEGORIAS -->
+      <div class="view" id="view-categorias">
+        <div id="cat-list"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL PRODUCTO -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-title">Agregar producto</h2>
+        <button class="modal-close" id="modal-close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group" style="grid-column:1/-1">
+            <label class="form-label">Nombre del producto *</label>
+            <input class="form-input" id="f-name" type="text" placeholder="Ej: Arroz Diana 500g">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Código de barras</label>
+            <input class="form-input" id="f-barcode" type="text" placeholder="Ej: 7702001010101">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Categoría *</label>
+            <select class="form-input" id="f-cat">
+              <option>Alimentos</option><option>Bebidas</option><option>Limpieza</option>
+              <option>Cuidado personal</option><option>Papelería</option><option>Electrónica</option><option>Otro</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Precio ($) *</label>
+            <input class="form-input" id="f-price" type="number" min="0" step="0.01" placeholder="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Stock actual *</label>
+            <input class="form-input" id="f-stock" type="number" min="0" placeholder="0">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Stock mínimo (alerta)</label>
+            <input class="form-input" id="f-min" type="number" min="0" placeholder="5">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Descripción</label>
+            <input class="form-input" id="f-desc" type="text" placeholder="Opcional">
+          </div>
+        </div>
+        <div class="form-error" id="form-error"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="btn-cancelar">Cancelar</button>
+        <button class="btn btn-primary" id="btn-guardar">Guardar producto</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL código no encontrado -->
+  <div class="modal-overlay" id="modal-not-found">
+    <div class="modal" style="max-width:400px">
+      <div class="modal-header">
+        <h2 class="modal-title">Código no registrado</h2>
+        <button class="modal-close" id="nf-close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p style="color:var(--text2);font-size:13px;margin-bottom:12px">El código <strong id="nf-code"></strong> no está en el inventario.</p>
+        <p style="color:var(--text2);font-size:13px">¿Deseas agregar este producto ahora?</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="nf-cancelar">Cancelar</button>
+        <button class="btn btn-primary" id="nf-agregar">Agregar producto</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL cierre de caja -->
+  <div class="modal-overlay" id="modal-cierre">
+    <div class="modal" style="max-width:500px">
+      <div class="modal-header">
+        <h2 class="modal-title">Cierre de ventas del día</h2>
+        <button class="modal-close" id="cierre-close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="cierre-resumen" id="cierre-resumen"></div>
+        <div class="cierre-warn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Las ventas del día dejarán de aparecer en el Dashboard. El historial completo siempre se conserva.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="cierre-cancelar">Cancelar</button>
+        <button class="btn btn-cierre-confirm" id="cierre-confirmar">Confirmar cierre del día</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- Script principal (módulo ES) -->
+  <script type="module" src="script.js"></script>
+
+  <!-- Scripts inline: tabs escáner + búsqueda por nombre
+       Usan window._inv_* para acceder a datos del módulo -->
+  <script>
+    function switchTab(tab) {
+      const ps=document.getElementById('panel-scanner');
+      const pn=document.getElementById('panel-nombre');
+      const ss=document.getElementById('stab-scanner');
+      const sn=document.getElementById('stab-nombre');
+      const sl=document.querySelector('.scanner-label');
+      if(tab==='scanner'){
+        ps.classList.remove('hidden'); pn.classList.add('hidden');
+        ss.classList.add('active');    sn.classList.remove('active');
+        if(sl) sl.textContent='Escáner activo';
+        setTimeout(()=>document.getElementById('barcode-input')?.focus(),100);
+      } else {
+        ps.classList.add('hidden');    pn.classList.remove('hidden');
+        ss.classList.remove('active');sn.classList.add('active');
+        if(sl) sl.textContent='Búsqueda por nombre';
+        setTimeout(()=>document.getElementById('nombre-input')?.focus(),100);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded',()=>{
+      const ni =document.getElementById('nombre-input');
+      const nac=document.getElementById('nombre-autocomplete-list');
+      const ncl=document.getElementById('nombre-clear');
+      if(!ni) return;
+      let ntmr=null;
+
+      ni.addEventListener('input',()=>{
+        const v=ni.value.trim();
+        if(ncl) ncl.style.display=v?'flex':'none';
+        clearTimeout(ntmr);
+        if(!v){nac.classList.remove('open');return;}
+        ntmr=setTimeout(()=>nombreSugg(v),180);
+      });
+
+      ni.addEventListener('keydown',e=>{
+        if(e.key==='Escape'){nac.classList.remove('open');return;}
+        if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+          e.preventDefault();
+          const items=[...nac.querySelectorAll('.ac-item:not(.sin-stock)')];
+          if(!items.length) return;
+          const foc=nac.querySelector('.ac-item.focused');
+          let idx=foc?items.indexOf(foc):-1;
+          if(foc) foc.classList.remove('focused');
+          idx=e.key==='ArrowDown'?Math.min(idx+1,items.length-1):Math.max(idx-1,0);
+          items[idx].classList.add('focused');
+          items[idx].scrollIntoView({block:'nearest'});
+          return;
+        }
+        if(e.key==='Enter'){
+          e.preventDefault();
+          const foc=nac.querySelector('.ac-item.focused');
+          if(foc){const p=getProducts().find(p=>p.id===parseInt(foc.dataset.id));if(p){pickNombre(p);return;}}
+          const vis=nac.querySelectorAll('.ac-item:not(.sin-stock)');
+          if(vis.length===1){const p=getProducts().find(p=>p.id===parseInt(vis[0].dataset.id));if(p){pickNombre(p);return;}}
+        }
+      });
+
+      nac.addEventListener('mousedown',e=>{
+        const item=e.target.closest('.ac-item');
+        if(!item||item.classList.contains('sin-stock')) return;
+        e.preventDefault();
+        const p=getProducts().find(p=>p.id===parseInt(item.dataset.id));
+        if(p) pickNombre(p);
+      });
+
+      document.addEventListener('mousedown',e=>{
+        if(!e.target.closest('#panel-nombre')) nac.classList.remove('open');
+      });
+
+      if(ncl) ncl.addEventListener('click',()=>{
+        ni.value='';ncl.style.display='none';nac.classList.remove('open');ni.focus();
+      });
+
+      // Actualizar topbar de ventas cada 2 s
+      setInterval(()=>{
+        const bar=document.getElementById('ventas-topbar-info'); if(!bar) return;
+        const sales=getSales();
+        const hoy=sales.filter(s=>s&&!s.anulada&&!s.cerrada&&s.date&&s.date.startsWith(getToday()));
+        const tot=hoy.reduce((a,s)=>a+(s.total||0),0);
+        bar.innerHTML=`
+          <span class="vt-badge">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+            <strong>${hoy.length}</strong> venta${hoy.length!==1?'s':''} hoy
+          </span>
+          <span class="vt-total">${getFmt()(tot)}</span>`;
+      },2000);
+    });
+
+    // Accesores seguros (el módulo puede no haber terminado aún)
+    function getProducts(){ return window._inv_products||[]; }
+    function getSales()   { return window._inv_sales||[]; }
+    function getToday()   { return (window._inv_today?window._inv_today():new Date().toISOString().slice(0,10)); }
+    function getFmt()     { return window._inv_fmt||(n=>'$'+Number(n).toLocaleString('es-CO')); }
+
+    function nombreSugg(val) {
+      const nac=document.getElementById('nombre-autocomplete-list'); if(!nac) return;
+      const q=val.toLowerCase();
+      const m=getProducts().filter(p=>p.name.toLowerCase().includes(q)||(p.barcode||'').includes(q)).slice(0,10);
+      if(!m.length){nac.classList.remove('open');return;}
+      const f=getFmt();
+      nac.innerHTML=m.map(p=>`
+        <div class="ac-item ${p.stock===0?'sin-stock':''}" data-id="${p.id}">
+          <div class="ac-name">${p.name}</div>
+          <div class="ac-right">
+            <div class="ac-price">${f(p.price)}</div>
+            <div class="ac-stock ${p.stock===0?'sin-stock-label':''}">Stock: ${p.stock}</div>
+          </div>
+        </div>`).join('');
+      nac.classList.add('open');
+    }
+
+    function pickNombre(prod) {
+      const nac=document.getElementById('nombre-autocomplete-list');
+      const ni =document.getElementById('nombre-input');
+      const ncl=document.getElementById('nombre-clear');
+      if(nac) nac.classList.remove('open');
+      if(ni)  ni.value='';
+      if(ncl) ncl.style.display='none';
+      if(prod.stock<=0){
+        const t=document.getElementById('toast');
+        if(t){t.textContent=`Sin stock: ${prod.name}`;t.style.background='#c0392b';
+          t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
+        return;
+      }
+      if(typeof window._addToCart==='function') window._addToCart(prod);
+      setTimeout(()=>ni?.focus(),50);
+    }
+  </script>
+</body>
+</html>
