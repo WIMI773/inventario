@@ -26,6 +26,10 @@ const CAT_EMOJIS = {
   'Alimentos':'🌾','Bebidas':'🥤','Limpieza':'🧹',
   'Cuidado personal':'💆','Papelería':'📝','Electrónica':'⚡','Otro':'📦'
 };
+const COSMETIC_BRANDS_KEY = 'inventario_marcas_cosmeticos';
+const COSMETIC_SELECTED_KEY = 'inventario_marcas_cosmeticos_seleccionadas';
+const DEFAULT_COSMETIC_BRANDS = ['Maybelline', 'L’Oréal', 'MAC', 'Revlon', 'NYX', 'Vogue'];
+const GENERAL_CATEGORIES = ['Alimentos', 'Bebidas', 'Limpieza', 'Cuidado personal', 'Papelería', 'Electrónica', 'Otro'];
 
 // ── Colores PDF ───────────────────────────────────────────
 const PDF_BRAND = {
@@ -100,6 +104,116 @@ function fmtGrp(iso) {
     if (d.toDateString() === ayer.toDateString()) return 'Ayer';
     return d.toLocaleDateString('es-CO', {weekday:'long', day:'numeric', month:'long'});
   } catch { return 'Fecha desconocida'; }
+}
+
+function readCosmeticBrands() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(COSMETIC_BRANDS_KEY));
+    return Array.isArray(saved) && saved.length ? saved : [...DEFAULT_COSMETIC_BRANDS];
+  } catch { return [...DEFAULT_COSMETIC_BRANDS]; }
+}
+
+function readSelectedCosmeticBrands() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(COSMETIC_SELECTED_KEY));
+    return new Set(Array.isArray(saved) ? saved : []);
+  } catch { return new Set(); }
+}
+
+function saveCosmeticSelection(selected) {
+  localStorage.setItem(COSMETIC_SELECTED_KEY, JSON.stringify([...selected]));
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>'"]/g, char => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+  })[char]);
+}
+
+function syncProductCategoryOptions() {
+  const select = el('f-cat');
+  if (!select) return;
+  const current = select.value;
+  const brands = readCosmeticBrands();
+  select.innerHTML = `${GENERAL_CATEGORIES.map(category => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join('')}
+    <optgroup label="Marcas cosméticas">
+      ${brands.map(brand => `<option value="${escapeHtml(brand)}">${escapeHtml(brand)}</option>`).join('')}
+    </optgroup>`;
+  if ([...select.options].some(option => option.value === current)) select.value = current;
+}
+
+function renderCosmeticBrands() {
+  const wrap = el('cosmetic-brands');
+  if (!wrap) return;
+  const brands = readCosmeticBrands();
+  syncProductCategoryOptions();
+  const selected = readSelectedCosmeticBrands();
+  const selectedCount = brands.filter(brand => selected.has(brand)).length;
+  const parentState = selectedCount === brands.length ? 'checked' : '';
+  const parentMixed = selectedCount > 0 && selectedCount < brands.length ? 'data-mixed="true"' : '';
+
+  wrap.innerHTML = `
+    <div class="brand-tree-header">
+      <label class="tree-check tree-parent">
+        <input type="checkbox" data-brand-parent ${parentState} ${parentMixed}>
+        <span class="tree-box"></span>
+        <span class="tree-label"><strong>Cosméticos</strong><small>${selectedCount} de ${brands.length} marcas seleccionadas</small></span>
+      </label>
+      <span class="brand-count">${brands.length} marcas</span>
+    </div>
+    <div class="brand-tree-children">
+      ${brands.map(brand => `
+        <label class="tree-check tree-child">
+          <input type="checkbox" data-brand="${encodeURIComponent(brand)}" ${selected.has(brand) ? 'checked' : ''}>
+          <span class="tree-box"></span>
+          <span class="tree-label">${escapeHtml(brand)}</span>
+        </label>`).join('')}
+    </div>`;
+
+  const parent = wrap.querySelector('[data-brand-parent]');
+  if (parent) parent.indeterminate = selectedCount > 0 && selectedCount < brands.length;
+
+  const cards = el('cosmetic-brand-cards');
+  if (!cards) return;
+  cards.innerHTML = `<div class="cat-grid">
+    ${brands.map(brand => {
+      const items = products.filter(product => product.category === brand || product.brand === brand);
+      const value = items.reduce((total, product) => total + (product.price || 0) * (product.stock || 0), 0);
+      const low = items.filter(product => stockSt(product) === 'low').length;
+      const out = items.filter(product => stockSt(product) === 'out').length;
+      return `<div class="cat-card brand-card ${selected.has(brand) ? 'is-selected' : ''}">
+        <div class="cat-card-header">
+          <div class="cat-icon brand-card-icon">✦</div>
+          <div class="cat-name">${escapeHtml(brand)}</div>
+        </div>
+        <div class="cat-stat"><span>Productos</span><strong>${items.length}</strong></div>
+        <div class="cat-stat"><span>Valor en stock</span><strong>${fmt(value)}</strong></div>
+        <div class="cat-stat"><span>Stock bajo</span><strong class="brand-warning">${low}</strong></div>
+        <div class="cat-stat"><span>Sin stock</span><strong class="brand-danger">${out}</strong></div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function toggleCosmeticBrands(selectAll) {
+  const brands = readCosmeticBrands();
+  const selected = selectAll ? new Set(brands) : new Set();
+  saveCosmeticSelection(selected);
+  renderCosmeticBrands();
+}
+
+function addCosmeticBrand() {
+  const input = el('new-cosmetic-brand');
+  const name = input?.value.trim().replace(/\s+/g, ' ');
+  if (!name) { toast('Escribe una marca cosmética.', 'error'); return; }
+  const brands = readCosmeticBrands();
+  if (brands.some(brand => brand.toLocaleLowerCase() === name.toLocaleLowerCase())) {
+    toast('Esa marca ya está registrada.', 'error'); return;
+  }
+  localStorage.setItem(COSMETIC_BRANDS_KEY, JSON.stringify([...brands, name]));
+  input.value = '';
+  renderCosmeticBrands();
+  toast('Marca cosmética agregada', 'green');
 }
 
 // ── Toast ─────────────────────────────────────────────────
@@ -987,6 +1101,7 @@ function renderAlertas() {
 
 // ── Categorías ────────────────────────────────────────────
 function renderCategorias() {
+  renderCosmeticBrands();
   const cd = {};
   products.forEach(p => {
     if (!cd[p.category]) cd[p.category] = {count:0, valor:0, bajo:0, sin:0};
@@ -1739,6 +1854,7 @@ window._facturarVenta = (fid) => {
 
 // ── INIT ──────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  syncProductCategoryOptions();
 
   onAuthStateChanged(auth, user => {
     if (!user) { window.location.replace('login.html'); return; }
@@ -1766,6 +1882,25 @@ document.addEventListener('DOMContentLoaded', () => {
   el('search')?.addEventListener('input',        renderTable);
   el('cat-filter')?.addEventListener('change',   renderTable);
   el('stock-filter')?.addEventListener('change', renderTable);
+
+  el('btn-add-cosmetic-brand')?.addEventListener('click', addCosmeticBrand);
+  el('new-cosmetic-brand')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') addCosmeticBrand();
+  });
+  el('cosmetic-brands')?.addEventListener('change', e => {
+    if (e.target.matches('[data-brand-parent]')) {
+      toggleCosmeticBrands(e.target.checked);
+      return;
+    }
+    const encodedBrand = e.target.getAttribute('data-brand');
+    if (!encodedBrand) return;
+    const brand = decodeURIComponent(encodedBrand);
+    const selected = readSelectedCosmeticBrands();
+    if (e.target.checked) selected.add(brand);
+    else selected.delete(brand);
+    saveCosmeticSelection(selected);
+    renderCosmeticBrands();
+  });
 
   document.querySelectorAll('.sortable').forEach(th => {
     th.addEventListener('click', () => {

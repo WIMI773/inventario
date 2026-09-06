@@ -1352,6 +1352,23 @@
 
       <!-- CATEGORIAS -->
       <div class="view" id="view-categorias">
+        <div class="categories-toolbar">
+          <div>
+            <div class="section-eyebrow">Catálogo organizado</div>
+            <h2 class="categories-heading">Marcas de cosméticos</h2>
+            <p class="categories-help">Selecciona una categoría para ver o administrar sus marcas.</p>
+          </div>
+          <div class="add-brand-control">
+            <input class="form-input" id="new-cosmetic-brand" type="text" placeholder="Nueva marca cosmética">
+            <button class="btn btn-primary" id="btn-add-cosmetic-brand" type="button">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Agregar marca
+            </button>
+          </div>
+        </div>
+        <div class="cosmetic-tree card" id="cosmetic-brands"></div>
+        <div class="brand-cards-heading">Marcas registradas</div>
+        <div id="cosmetic-brand-cards"></div>
         <div id="cat-list"></div>
       </div>
     </div>
