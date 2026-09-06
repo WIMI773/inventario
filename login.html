@@ -3,39 +3,40 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Iniciar sesión — W Inventra</title>
+  <title>Iniciar sesión — Bella Cosmética</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:           #f5f4f0;
-      --surface:      #ffffff;
-      --border:       #e8e6e0;
-      --text:         #1a1915;
-      --text2:        #6b6860;
-      --text3:        #9e9b94;
-      --accent:       #1a4fd6;
-      --accent-hover: #1540b8;
+      --bg:           #f8e9ed;
+      --surface:      #fffafd;
+      --border:       #d9d8df;
+      --text:         #252735;
+      --text2:        #5d6172;
+      --text3:        #9295a4;
+      --accent:       #bd4e7b;
+      --accent-hover: #a63d67;
       --green:        #1a8f4b;
       --green-bg:     #eaf6ef;
       --red:          #c0392b;
       --red-bg:       #fdecea;
       --radius-sm:    6px;
       --font:         'DM Sans', sans-serif;
+      --display:      'Playfair Display', Georgia, serif;
       --tr:           0.15s ease;
     }
 
     body {
       font-family: var(--font);
-      background: var(--bg);
+      background: var(--surface);
       color: var(--text);
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 1.5rem;
+      padding: 0;
       font-size: 14px;
     }
 
@@ -43,20 +44,21 @@
       content: '';
       position: fixed;
       inset: 0;
-      background-image:
-        radial-gradient(circle at 20% 20%, rgba(26,79,214,.06) 0%, transparent 50%),
-        radial-gradient(circle at 80% 80%, rgba(26,143,75,.05) 0%, transparent 50%);
+      background-image: none;
       pointer-events: none;
     }
 
     .login-card {
       background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      box-shadow: 0 4px 32px rgba(0,0,0,.09);
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
       width: 100%;
-      max-width: 400px;
+      max-width: none;
+      min-height: 100vh;
       overflow: hidden;
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr);
       animation: slideUp .3s ease;
     }
 
@@ -65,24 +67,61 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
+    .brand-panel {
+      position: relative;
+      min-height: 100vh;
+      padding: 58px 8%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      color: #fff;
+      background: linear-gradient(180deg, rgba(16,15,17,.38), rgba(16,15,17,.55)), url('https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=1100&q=88') center/cover;
+    }
+
+    .brand-panel::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0,0,0,.2), transparent 55%); pointer-events: none; }
+    .brand-content, .brand-benefits { position: relative; z-index: 1; }
+    .brand-content { margin-top: 5vh; }
+    .brand-kicker { font-size: 12px; letter-spacing: .3em; text-transform: uppercase; color: #f4b8cd; margin-bottom: 14px; }
+    .brand-name { font-family: var(--display); font-size: clamp(44px, 5vw, 72px); line-height: .95; letter-spacing: .08em; font-weight: 500; }
+    .brand-name span { display: block; font-family: var(--font); font-size: 16px; letter-spacing: .52em; margin: 18px 0 24px 7px; }
+    .brand-slogan { font-family: var(--display); font-style: italic; font-size: 22px; color: #f6bfd2; }
+    .brand-benefits { display: flex; gap: 28px; font-size: 11px; color: rgba(255,255,255,.86); }
+    .benefit { display: flex; align-items: center; gap: 8px; }
+    .benefit svg { flex: 0 0 auto; color: #f4b8cd; }
+
+    .form-panel {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-self: center;
+      width: min(440px, calc(100% - 48px));
+      min-height: min(700px, calc(100vh - 48px));
+      margin: 24px auto;
+      padding: 42px 44px 34px;
+      background: rgba(255,250,253,.96);
+      border: 1px solid transparent;
+      border-radius: 18px;
+      box-shadow: 0 16px 38px rgba(97,65,87,.1);
+    }
+
     .login-header {
-      padding: 32px 32px 24px;
-      border-bottom: 1px solid var(--border);
+      padding: 0 0 28px;
+      border-bottom: 0;
       text-align: center;
     }
 
     .brand-logo {
-      width: 48px; height: 48px;
-      background: var(--accent); color: #fff;
-      border-radius: 14px;
+      width: 52px; height: 52px;
+      background: #f1cad8; color: var(--accent);
+      border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      margin: 0 auto 14px;
-      box-shadow: 0 4px 12px rgba(26,79,214,.3);
+      margin: 0 auto 18px;
+      box-shadow: none;
     }
 
-    .login-title { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
-    .login-sub   { font-size: 13px; color: var(--text3); }
-    .login-body  { padding: 28px 32px; }
+    .login-title { font-size: 27px; font-weight: 600; margin-bottom: 7px; }
+    .login-sub   { font-size: 13px; color: var(--text2); line-height: 1.6; }
+    .login-body  { padding: 0; }
 
     .form-group { margin-bottom: 16px; }
     .form-label { display: block; font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 6px; }
@@ -92,9 +131,9 @@
 
     .form-input {
       width: 100%;
-      padding: 10px 12px 10px 38px;
+      padding: 12px 42px 12px 42px;
       border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
+      border-radius: 8px;
       font-family: var(--font); font-size: 14px;
       background: var(--surface); color: var(--text);
       outline: none;
@@ -102,7 +141,7 @@
     }
     .form-input:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(26,79,214,.08);
+      box-shadow: 0 0 0 3px rgba(189,78,123,.1);
     }
 
     .pass-toggle {
@@ -115,7 +154,7 @@
 
     .forgot-link {
       display: block; text-align: right; font-size: 12px;
-      color: var(--accent); text-decoration: none; margin-top: 6px; cursor: pointer;
+      color: var(--accent); text-decoration: none; margin-top: 0; cursor: pointer;
       transition: color var(--tr);
     }
     .forgot-link:hover { color: var(--accent-hover); text-decoration: underline; }
@@ -123,11 +162,12 @@
     .btn-login {
       width: 100%; padding: 11px 16px;
       background: var(--accent); color: #fff;
-      border: none; border-radius: var(--radius-sm);
+      border: none; border-radius: 8px;
       font-family: var(--font); font-size: 14px; font-weight: 500;
       cursor: pointer; transition: background var(--tr), transform .1s;
       display: flex; align-items: center; justify-content: center; gap: 8px;
-      margin-top: 6px;
+      margin-top: 22px;
+      min-height: 43px;
     }
     .btn-login:hover:not(:disabled)  { background: var(--accent-hover); }
     .btn-login:active:not(:disabled) { transform: scale(.99); }
@@ -153,9 +193,9 @@
     .msg-box svg { flex-shrink: 0; margin-top: 1px; }
 
     .login-footer {
-      padding: 16px 32px 20px; text-align: center;
+      padding: 22px 0 0; text-align: center;
       font-size: 12px; color: var(--text3);
-      border-top: 1px solid var(--border);
+      border-top: 0;
     }
 
     #panel-recover { display: none; }
@@ -171,8 +211,34 @@
 
     .recover-desc { font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 18px; }
 
+    .login-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 2px; }
+    .remember { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text2); cursor: pointer; }
+    .remember input { accent-color: var(--accent); width: 15px; height: 15px; }
+    .form-group:has(.login-meta) { margin-bottom: 0; }
+    .form-divider { display: flex; align-items: center; gap: 16px; color: var(--text2); font-size: 12px; margin: 26px 0; }
+    .form-divider::before, .form-divider::after { content: ''; height: 1px; background: var(--border); flex: 1; }
+    .btn-secondary { width: 100%; min-height: 43px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--text); font: 500 13px var(--font); cursor: pointer; }
+    .btn-secondary:hover { background: #fff1f6; }
+    .signup-note { text-align: center; margin-top: 22px; font-size: 11px; color: var(--text2); }
+    .signup-note a { color: var(--accent); font-weight: 600; text-decoration: underline; cursor: pointer; }
+
+    @media (max-width: 650px) {
+      .login-card { display: block; max-width: 480px; min-height: 100vh; }
+      .brand-panel { min-height: 260px; padding: 28px 8%; }
+      .brand-content { margin-top: 0; }
+      .brand-name { font-size: 44px; }
+      .brand-slogan { font-size: 18px; }
+      .brand-benefits { display: none; }
+      .form-panel {
+        width: calc(100% - 32px);
+        min-height: auto;
+        margin: 16px auto 28px;
+        padding: 36px 28px 30px;
+      }
+    }
+
     @media (max-width: 440px) {
-      .login-header, .login-body, .login-footer { padding-left: 22px; padding-right: 22px; }
+      .form-panel { padding-left: 22px; padding-right: 22px; }
     }
   </style>
 </head>
@@ -180,15 +246,30 @@
 
 <div class="login-card">
 
+  <aside class="brand-panel">
+    <div class="brand-content">
+      <div class="brand-kicker">BIENVENIDO A</div>
+      <div class="brand-name">RUBI <span></span></div>
+      <div class="brand-kicker">BELLEZA QUE TE HACE BRILLAR</div>
+    </div>
+    <div class="brand-benefits">
+      <div class="benefit"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 17h13V5H3zM16 9h3l3 3v5h-6zM6 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM18 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></svg><span>Envíos<br>a todo el país</span></div>
+      <div class="benefit"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3 20 6v5c0 5-3.4 8.5-8 10-4.6-1.5-8-5-8-10V6z"/><path d="m9 12 2 2 4-4"/></svg><span>Productos<br>100% originales</span></div>
+      <div class="benefit"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.8 8.8c0 5.5-8.8 11.2-8.8 11.2S3.2 14.3 3.2 8.8A4.7 4.7 0 0 1 12 6.3a4.7 4.7 0 0 1 8.8 2.5z"/></svg><span>Belleza<br>en un solo lugar</span></div>
+    </div>
+  </aside>
+
+  <main class="form-panel">
+
   <div class="login-header">
     <div class="brand-logo">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-        <polyline points="9 22 9 12 15 12 15 22"/>
+        <circle cx="12" cy="8" r="3.5"/>
+        <path d="M5 20c.6-3.3 3-5 7-5s6.4 1.7 7 5"/>
       </svg>
     </div>
-    <div class="login-title">W Inventra</div>
-    <div class="login-sub" id="header-sub">Accede a tu sistema de inventario</div>
+    <div class="login-title">Iniciar sesión</div>
+    <div class="login-sub" id="header-sub">Accede a tu cuenta y disfruta de todas<br>nuestras promociones y novedades.</div>
   </div>
 
   <div class="login-body">
@@ -236,13 +317,20 @@
             </svg>
           </button>
         </div>
-        <a class="forgot-link" id="link-recover">¿Olvidaste tu contraseña?</a>
+        <div class="login-meta">
+          <label class="remember"><input type="checkbox" id="remember-me"> <span>Recordarme</span></label>
+          <a class="forgot-link" id="link-recover">¿Olvidaste tu contraseña?</a>
+        </div>
       </div>
 
       <button class="btn-login" id="btn-login">
         <div class="spinner"></div>
-        <span class="btn-text">Iniciar sesión</span>
+        <span class="btn-text">Iniciar sesión&nbsp; &rarr;</span>
       </button>
+
+      <div class="form-divider"><span>o</span></div>
+      <button class="btn-secondary" type="button" id="btn-create-account">Crear una cuenta</button>
+      <div class="signup-note">¿Eres cliente nuevo? <a id="link-signup">Regístrate aquí</a></div>
     </div>
 
     <!-- ── PANEL RECUPERAR ── -->
@@ -289,7 +377,8 @@
 
   </div>
 
-  <div class="login-footer">Sistema de Inventario · Mi Tienda · v3.1</div>
+  <div class="login-footer">Panel privado · Bella Cosmética</div>
+  </main>
 </div>
 
 <script type="module">
@@ -375,7 +464,7 @@
   $('btn-back-login').addEventListener('click', () => {
     $('panel-recover').style.display = 'none';
     $('panel-login').style.display   = 'block';
-    $('header-sub').textContent = 'Accede a tu sistema de inventario';
+    $('header-sub').innerHTML = 'Accede a tu cuenta y disfruta de todas<br>nuestras promociones y novedades.';
     clearMsg('msg-login');
   });
 
